@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="SI">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Results</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title has-text-centered">Volitve v Evropski parlament | Stranke </h1>
+            <p class="subtitle">Vir: DVK</p>
+            <div class="table-container">
+                <table class="table is-striped is-fullwidth">
+                    <thead>
+                        <tr>
+                            <th>Identifikator liste</th>
+                            <th>Stranka (naziv liste)</th>
+                            <th>Število glasov za stranko</th>
+                            <th>Procent glasov</th>
+                            <th>Število mandatov liste</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableParties">
+                        <!-- Data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <h1 class="title has-text-centered">Volitve v Evropski parlament | Kandidati</h1>
+            <div class="table-container">
+                <table class="table is-striped is-fullwidth">
+                    <thead>
+                        <tr>
+                            <th>Identifikator liste</th>
+                            <th>Kandidati</th>
+                            <th>število preferenčnih glasov</th>
+                            <th>Procent preferenčnih glasov</th>
+                            <th>Število glasov za stranko</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableCandidates">
+                        <!-- Data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script>
+// GET DATA FROM HERE
+// https://volitve.dvk-rs.si/ep2024/data/rezultati.json
+// https://volitve.dvk-rs.si/ep2024/data/kandidati_rezultati.json
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const candidateUrl = 'kandidati_rezultati.json';
+            const candidateTableBody = document.getElementById("resultsTableCandidates");
+            const partyUrl = 'rezultati.json';
+            const partyTableBody = document.getElementById("resultsTableParties");
+
+            Promise.all([
+                fetch(candidateUrl).then(response => response.json()),
+                fetch(partyUrl).then(response => response.json())
+            ]).then(([candidateData, partyData]) => {
+                const candidates = candidateData.kandidati;
+                const parties = partyData.slovenija;
+
+                // Create a map of parties for quick lookup by list number (st)
+                const partyMap = parties.reduce((map, party) => {
+                    map[party.st] = party;
+                    return map;
+                }, {});
+
+                // Populate the party table
+                parties.sort((a, b) => b.prc - a.prc);
+                parties.forEach(party => {
+                    const row = document.createElement('tr');
+                    if (party.hcol) {
+                        row.style.backgroundColor = `#${party.hcol}`;
+                    }
+
+                    const listNumberCell = document.createElement('td');
+                    listNumberCell.textContent = party.st;
+                    row.appendChild(listNumberCell);
+
+                    const partyCell = document.createElement('td');
+                    partyCell.textContent = party.naz;
+                    row.appendChild(partyCell);
+
+                    const voicesCell = document.createElement('td');
+                    voicesCell.textContent = party.gl;
+                    row.appendChild(voicesCell);
+
+                    const percentageCell = document.createElement('td');
+                    percentageCell.textContent = (party.prc * 100).toFixed(2) + '%';
+                    row.appendChild(percentageCell);
+
+                    const mandatesCell = document.createElement('td');
+                    mandatesCell.textContent = party.man;
+                    row.appendChild(mandatesCell);
+
+                    partyTableBody.appendChild(row);
+                });
+
+                // Populate the candidate table
+                candidates.sort((a, b) => b.gl - a.gl);
+                candidates.forEach(candidate => {
+                    const row = document.createElement('tr');
+                    const party = partyMap[candidate.st];
+
+                    if (candidate.man && party && party.hcol) {
+                        row.style.backgroundColor = `#${party.hcol}`;
+                    }
+
+                    const listNumberCell = document.createElement('td');
+                    listNumberCell.textContent = candidate.st;
+                    row.appendChild(listNumberCell);
+
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = candidate.naziv;
+                    row.appendChild(nameCell);
+
+                    const voicesCell = document.createElement('td');
+                    voicesCell.textContent = candidate.gl;
+                    row.appendChild(voicesCell);
+
+                    const percentageCell = document.createElement('td');
+                    percentageCell.textContent = (candidate.prc * 100).toFixed(2) + '%';
+                    row.appendChild(percentageCell);
+
+                    const partyVoicesCell = document.createElement('td');
+                    partyVoicesCell.textContent = party ? party.gl : 'N/A';
+                    row.appendChild(partyVoicesCell);
+
+                    // Calculate and display the square root of the sum of squares of party.gl and candidate.gl
+                    // const strengthCell = document.createElement('td');
+                    //const strength = Math.sqrt(Math.pow(party.gl, 2) + Math.pow(candidate.gl, 2));
+                    //strengthCell.textContent = strength.toFixed(2); // Displaying with 2 decimal places
+                    //row.appendChild(strengthCell);
+
+                    candidateTableBody.appendChild(row);
+                });
+            }).catch(error => console.error('Error fetching data:', error));
+        });
+    </script>
+</body>
+</html>
+
